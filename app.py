@@ -1,25 +1,64 @@
 import requests
-from flask import Flask, render_template
+from flask import Flask, render_template, request
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
+db = SQLAlchemy(app=app)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///weather.db'
 
-@app.route('/')
+class City(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+
+
+@app.route('/', methods=['GET', 'POST'])
 def index():
-    url = "http://samples.openweathermap.org/data/2.5/find?q={}&units=metric&appid=439d4b804bc8187953eb36d2a8c26a02"
-    city = "London"
+    city_set = set()
+    weather_data = []
+    new_city_flag = False
+    city_error = False
 
-    r = requests.get(url.format(city)).json()
+    cities = City.query.all()
+    for city in cities:
+        city_set.add(city.name)
 
-    weather = {
-        'city': city,
-        'temperature': r["list"][0]["main"]["temp"],
-        'description': r["list"][0]["weather"][1]["description"],
-        'icon': r["list"][0]["weather"][1]["icon"],
-    }
+    if request.method == 'POST':
+        new_city = request.form.get('city')
+        new_city.capitalize()
 
-    print(weather)
-    return render_template('index.html', weather=weather)
+        if new_city not in city_set:
+            print("!!!!!!!!!!!!!!!!!!!!!!!")
+            city_set.add(new_city)
+            new_city_flag = True
+
+    url = "https://api.openweathermap.org/data/2.5/weather?q={}&units=metric&appid=8b29b1101ffeda5bb8c2d72994e14df5"
+
+    for city in city_set:
+        print(city)
+        r = requests.get(url.format(city)).json()
+
+        if r['cod'] == 200:
+            weather = {
+                'city': r["name"],
+                'temperature': r["main"]["temp"],
+                'description': r["weather"][0]["description"],
+                'icon': r["weather"][0]["icon"],
+            }
+            weather_data.append(weather)
+            if new_city_flag is True:
+                new_city_object = City(name=city)
+                db.session.add(new_city_object)
+                db.session.commit()
+
+        else:
+            city_error = True
+
+    if city_error:
+        city_set.remove(new_city)
+
+    print(city_set)
+    return render_template('index.html', weather_data=weather_data)
 
 
 if __name__ == "__main__":
