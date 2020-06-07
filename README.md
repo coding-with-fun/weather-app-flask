@@ -1,2 +1,2 @@
-# weather-app-flask
+# Weather App Flask
 Weather App made in Flask
