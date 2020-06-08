@@ -10,6 +10,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.2/css/bulma.css"
     />
   </head>
+
   <body>
     <section class="hero is-primary">
       <div class="hero-body">
@@ -40,6 +41,12 @@
                   </button>
                 </div>
               </div>
+              {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %} {% for category, message in messages %} {% set
+              message_class = 'is-success' %} {% if category == 'error' %} {%
+              set message_class = 'is-danger' %} {% endif %}
+              <div class="notification {{ message_class }}">{{ message }}</div>
+              {% endfor %} {% endif %} {% endwith %}
             </form>
           </div>
         </div>
@@ -70,6 +77,11 @@
                       {{ weather.description }}
                     </p>
                   </div>
+                </div>
+                <div class="media-right">
+                  <a href="{{ url_for('delete_city', name=weather.city) }}">
+                    <button class="delete"></button>
+                  </a>
                 </div>
               </article>
             </div>
